@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+        .titulo {
+            font-family: 'Poppins', sans-serif;
+        }
+        /* Estilos para o modal */
+        .modal {
+            display: none; /* Inicialmente escondido */
+            position: fixed; /* Posição fixa na tela */
+            z-index: 50; /* Z-index alto para ficar sobre tudo */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Rolagem se o conteúdo for longo */
+            background-color: rgba(0,0,0,0.5); /* Fundo semi-transparente */
+            justify-content: center; /* Centraliza horizontalmente */
+            align-items: center; /* Centraliza verticalmente */
+        }
+
+        .modal-conteudo {
+            background-color: #fff;
+            border-radius: 0.5rem; /* Bordas arredondadas */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Sombra */
+            padding: 2rem;
+            position: relative; /* Para posicionar o botão de fechar */
+            width: 90%; /* Largura máxima */
+            max-width: 600px; /* Largura máxima */
+        }
+
+        .modal-fechar {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            color: #f43f5e; /* Cor do ícone de fechar */
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-fechar:hover {
+            color: #dc2626; /* Cor do ícone de fechar no hover */
+        }
+
+        .produto-info-icon {
+            cursor: pointer;
+            height: 1.2em; /* Ajuste de altura */
+            width: 1.2em;  /* Ajuste de largura */
+        }
+
+        .produto-info-icon:hover {
+            transform: scale(1.1);
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+        <h1 class="titulo text-3xl font-semibold text-blue-600 text-center mb-6">Mercado App</h1>
+
+        <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+            <h2 class="titulo text-xl font-semibold text-gray-800 mb-4">Carrinho de Compras</h2>
+            <ul id="carrinho-lista" class="space-y-3">
+                </ul>
+            <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                <span class="text-gray-700 font-semibold">Total:</span>
+                <span id="carrinho-total" class="text-xl font-bold text-green-600">R$ 0,00</span>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+                 <button id="finalizar-compra" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
+                    Finalizar Compra
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+            <div class="flex flex-col sm:flex-row items-center justify-between mb-4">
+                <h2 class="titulo text-xl font-semibold text-gray-800 mb-4 sm:mb-0">Produtos</h2>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+                    <input
+                        type="text"
+                        id="pesquisa-produto"
+                        placeholder="Pesquisar produtos..."
+                        class="w-full sm:w-64 px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <div class="relative w-full sm:w-64">
+                        <select id="filtro-produto" class="appearance-none w-full px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700">
+                            <option value="todos">Todos os Produtos</option>
+                            <option value="marca">Filtrar por Marca</option>
+                            <option value="preco-crescente">Preço: Menor para Maior</option>
+                            <option value="preco-decrescente">Preço: Maior para Menor</option>
+                            <option value="alfabetico-a-z">Ordem Alfabética: A - Z</option>
+                            <option value="alfabetico-z-a">Ordem Alfabética: Z - A</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="produtos-lista">
+                </div>
+        </div>
+    </div>
+
+    <div id="produto-modal" class="modal">
+        <div class="modal-conteudo">
+            <span class="modal-fechar" id="modal-fechar">&times;</span>
+            <h2 id="modal-titulo" class="text-xl font-semibold text-gray-800 mb-2"></h2>
+            <div id="modal-info">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const produtosSupermercado = [
+            { nome: "Arroz", preco: 20.00, marca: "Tio João", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>360kcal</td></tr><tr><td>Carboidratos</td><td>80g</td></tr><tr><td>Proteínas</td><td>7g</td></tr></table>", id: "1" },
+            { nome: "Arroz", preco: 22.00, marca: "Camil", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>350kcal</td></tr> <tr><td>Carboidratos</td><td>78g</td></tr> <tr><td>Proteínas</td><td>6g</td></tr></table>", id: "2" },
+            { nome: "Feijão", preco: 15.00, marca: "Kicaldo", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>340kcal</td></tr><tr><td>Carboidratos</td><td>60g</td></tr><tr><td>Proteínas</td><td>21g</td></tr></table>", id: "3" },
+            { nome: "Feijão", preco: 14.50, marca: "Camil", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>330kcal</td></tr> <tr><td>Carboidratos</td><td>58g</td></tr> <tr><td>Proteínas</td><td>20g</td></tr></table>", id: "4" },
+            { nome: "Macarrão", preco: 5.00, marca: "Barilla", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>356kcal</td></tr><tr><td>Carboidratos</td><td>74g</td></tr><tr><td>Proteínas</td><td>12g</td></tr></table>", id: "5" },
+            { nome: "Macarrão", preco: 4.50, marca: "Adria", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>350kcal</td></tr> <tr><td>Carboidratos</td><td>73g</td></tr> <tr><td>Proteínas</td><td>11g</td></tr></table>", id: "6" },
+            { nome: "Óleo de Soja", preco: 9.00, marca: "Liza", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>900kcal</td></tr><tr><td>Gorduras Totais</td><td>100g</td></tr></table>", id: "7" },
+            { nome: "Óleo de Soja", preco: 8.50, marca: "Cocamar", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>890kcal</td></tr><tr><td>Gorduras Totais</td><td>99g</td></tr></table>", id: "8" },
+            { nome: "Açúcar", preco: 4.00, marca: "União", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>387kcal</td></tr><tr><td>Carboidratos</td><td>100g</td></tr></table>", id: "9" },
+            { nome: "Açúcar", preco: 3.80, marca: "Guarani", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>380kcal</td></tr><tr><td>Carboidratos</td><td>99g</td></tr></table>", id: "10" },
+            { nome: "Sal", preco: 2.00, marca: "Lebre", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>0kcal</td></tr><tr><td>Sódio</td><td>39g</td></tr></table>", id: "11" },
+            { nome: "Sal", preco: 1.80, marca: "Cisne", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>0kcal</td></tr><tr><td>Sódio</td><td>38g</td></tr></table>", id: "12" },
+            { nome: "Café", preco: 10.00, marca: "Melitta", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>0kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "13" },
+            { nome: "Café", preco: 9.50, marca: "Pilão", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>0kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "14" },
+            { nome: "Leite", preco: 4.00, marca: "Parmalat", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>62kcal</td></tr><tr><td>Gorduras Totais</td><td>3g</td></tr><tr><td>Cálcio</td><td>120mg</td></tr></table>", id: "15" },
+            { nome: "Leite", preco: 3.80, marca: "Italac", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>60kcal</td></tr><tr><td>Gorduras Totais</td><td>2.8g</td></tr><tr><td>Cálcio</td><td>115mg</td></tr></table>", id: "16" },
+            { nome: "Ovos", preco: 6.00, marca: "Mantiqueira", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por unidade (50g)</th></tr><tr><td>Valor Energético</td><td>75kcal</td></tr><tr><td>Gorduras Totais</td><td>5g</td></tr><tr><td>Proteínas</td><td>6g</td></tr></table>", id: "17" },
+            { nome: "Ovos", preco: 5.50, marca: "Katayama", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por unidade (50g)</th></tr><tr><td>Valor Energético</td><td>70kcal</td></tr><tr><td>Gorduras Totais</td><td>4.8g</td></tr><tr><td>Proteínas</td><td>5.8g</td></tr></table>", id: "18" },
+            { nome: "Pão de Forma", preco: 8.00, marca: "Pullman", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 2 fatias (50g)</th></tr><tr><td>Valor Energético</td><td>130kcal</td></tr><tr><td>Carboidratos</td><td>25g</td></tr><tr><td>Sódio</td><td>200mg</td></tr></table>", id: "19" },
+            { nome: "Pão de Forma", preco: 7.50, marca: "Wickbold", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 2 fatias (50g)</th></tr><tr><td>Valor Energético</td><td>125kcal</td></tr><tr><td>Carboidratos</td><td>24g</td></tr><tr><td>Sódio</td><td>190mg</td></tr></table>", id: "20" },
+            { nome: "Manteiga", preco: 12.00, marca: "Qualy", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 10g</th></tr><tr><td>Valor Energético</td><td>70kcal</td></tr><tr><td>Gorduras Totais</td><td>8g</td></tr></table>", id: "21" },
+            { nome: "Manteiga", preco: 11.50, marca: "Aviação", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 10g</th></tr><tr><td>Valor Energético</td><td>72kcal</td></tr><tr><td>Gorduras Totais</td><td>8.2g</td></tr></table>", id: "22" },
+            { nome: "Queijo Mussarela", preco: 20.00, marca: "Lactalis", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 30g</th></tr><tr><td>Valor Energético</td><td>80kcal</td></tr><tr><td>Gorduras Totais</td><td>6g</td></tr><tr><td>Cálcio</td><td>200mg</td></tr></table>", id: "23" },
+            { nome: "Queijo Mussarela", preco: 19.00, marca: "Tirolez", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 30g</th></tr><tr><td>Valor Energético</td><td>78kcal</td></tr><tr><td>Gorduras Totais</td><td>5.8g</td></tr><tr><td>Cálcio</td><td>195mg</td></tr></table>", id: "24" },
+            { nome: "Presunto", preco: 15.00, marca: "Sadia", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50g</th></tr><tr><td>Valor Energético</td><td>60kcal</td></tr><tr><td>Gorduras Totais</td><td>4g</td></tr><tr><td>Sódio</td><td>300mg</td></tr></table>", id: "25" },
+            { nome: "Presunto", preco: 14.00, marca: "Perdigão", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50g</th></tr><tr><td>Valor Energético</td><td>58kcal</td></tr><tr><td>Gorduras Totais</td><td>3.8g</td></tr><tr><td>Sódio</td><td>290mg</td></tr></table>", id: "26" },
+            { nome: "Frango Congelado", preco: 18.00, marca: "Sadia", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>150kcal</td></tr><tr><td>Gorduras Totais</td><td>9g</td></tr><tr><td>Proteínas</td><td>20g</td></tr></table>", id: "27" },
+            { nome: "Frango Congelado", preco: 17.00, marca: "Perdigão", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>145kcal</td></tr><tr><td>Gorduras Totais</td><td>8.5g</td></tr><tr><td>Proteínas</td><td>19.5g</td></tr></table>", id: "28" },
+            { nome: "Carne Bovina", preco: 25.00, marca: "Friboi", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>250kcal</td></tr><tr><td>Gorduras Totais</td><td>15g</td></tr><tr><td>Proteínas</td><td>26g</td></tr></table>", id: "29" },
+            { nome: "Carne Bovina", preco: 24.00, marca: "Swift", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>240kcal</td></tr><tr><td>Gorduras Totais</td><td>14g</td></tr><tr><td>Proteínas</td><td>25g</td></tr></table>", id: "30" },
+            { nome: "Salsicha", preco: 6.00, marca: "Sadia", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50g</th></tr><tr><td>Valor Energético</td><td>80kcal</td></tr><tr><td>Gorduras Totais</td><td>6g</td></tr><tr><td>Sódio</td><td>350mg</td></tr></table>", id: "31" },
+            { nome: "Salsicha", preco: 5.50, marca: "Perdigão", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50g</th></tr><tr><td>Valor Energético</td><td>75kcal</td></tr><tr><td>Gorduras Totais</td><td>5.5g</td></tr><tr><td>Sódio</td><td>340mg</td></tr></table>", id: "32" },
+            { nome: "Pizza Congelada", preco: 22.00, marca: "Sadia", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>280kcal</td></tr><tr><td>Gorduras Totais</td><td>12g</td></tr><tr><td>Carboidratos</td><td>30g</td></tr></table>", id: "33" },
+            { nome: "Pizza Congelada", preco: 21.00, marca: "Perdigão", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>270kcal</td></tr><tr><td>Gorduras Totais</td><td>11.5g</td></tr><tr><td>Carboidratos</td><td>29g</td></tr></table>", id: "34" },
+            { nome: "Lasanha Congelada", preco: 20.00, marca: "Seara", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>200kcal</td></tr><tr><td>Gorduras Totais</td><td>10g</td></tr><tr><td>Carboidratos</td><td>20g</td></tr></table>", id: "35" },
+            { nome: "Lasanha Congelada", preco: 19.00, marca: "Sadia", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>190kcal</td></tr><tr><td>Gorduras Totais</td><td>9.5g</td></tr><tr><td>Carboidratos</td><td>19g</td></tr></table>", id: "36" },
+            { nome: "Refrigerante Cola", preco: 7.00, marca: "Coca-Cola", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 200ml</th></tr><tr><td>Valor Energético</td><td>85kcal</td></tr><tr><td>Açúcares</td><td>21g</td></tr></table>", id: "37" },
+            { nome: "Refrigerante Cola", preco: 6.50, marca: "Pepsi", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 200ml</th></tr><tr><td>Valor Energético</td><td>80kcal</td></tr><tr><td>Açúcares</td><td>20g</td></tr></table>", id: "38" },
+            { nome: "Refrigerante Limão", preco: 6.00, marca: "Sprite", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 200ml</th></tr><tr><td>Valor Energético</td><td>70kcal</td></tr><tr><td>Açúcares</td><td>17g</td></tr></table>", id: "39" },
+            { nome: "Refrigerante Limão", preco: 5.50, marca: "Seven Up", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 200ml</th></tr><tr><td>Valor Energético</td><td>65kcal</td></tr><tr><td>Açúcares</td><td>16g</td></tr></table>", id: "40" },
+            { nome: "Suco de Laranja", preco: 8.00, marca: "Natural One", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 200ml</th></tr><tr><td>Valor Energético</td><td>90kcal</td></tr><tr><td>Açúcares</td><td>20g</td></tr><tr><td>Vitamina C</td><td>90mg</td></tr></table>", id: "41" },
+            { nome: "Suco de Laranja", preco: 7.50, marca: "Citrus Juice", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 200ml</th></tr><tr><td>Valor Energético</td><td>85kcal</td></tr><tr><td>Açúcares</td><td>19g</td></tr><tr><td>Vitamina C</td><td>85mg</td></tr></table>", id: "42" },
+            { nome: "Água Mineral", preco: 2.00, marca: "Crystal", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 200ml</th></tr><tr><td>Valor Energético</td><td>0kcal</td></tr><tr><td>Sódio</td><td>5mg</td></tr></table>", id: "43" },
+            { nome: "Água Mineral", preco: 1.80, marca: "Minalba", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 200ml</th></tr><tr><td>Valor Energético</td><td>0kcal</td></tr><tr><td>Sódio</td><td>4mg</td></tr></table>", id: "44" },
+            { nome: "Cerveja Pilsen", preco: 3.00, marca: "Skol", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 350ml</th></tr><tr><td>Valor Energético</td><td>150kcal</td></tr><tr><td>Álcool</td><td>4.7%</td></tr></table>", id: "45" },
+            { nome: "Cerveja Pilsen", preco: 2.80, marca: "Brahma", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 350ml</th></tr><tr><td>Valor Energético</td><td>145kcal</td></tr><tr><td>Álcool</td><td>4.6%</td></tr></table>", id: "46" },
+            { nome: "Cerveja IPA", preco: 8.00, marca: "Colorado", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 350ml</th></tr><tr><td>Valor Energético</td><td>200kcal</td></tr><tr><td>Álcool</td><td>6.5%</td></tr></table>", id: "47" },
+            { nome: "Cerveja IPA", preco: 7.50, marca: "Eisenbahn", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 350ml</th></tr><tr><td>Valor Energético</td><td>190kcal</td></tr><tr><td>Álcool</td><td>6.2%</td></tr></table>", id: "48" },
+            { nome: "Vinho Tinto", preco: 25.00, marca: "Concha y Toro", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>85kcal</td></tr><tr><td>Álcool</td><td>13.5%</td></tr></table>", id: "49" },
+            { nome: "Vinho Tinto", preco: 24.00, marca: "Casillero del Diablo", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>80kcal</td></tr><tr><td>Álcool</td><td>13.2%</td></tr></table>", id: "50" },
+            { nome: "Vinho Branco", preco: 22.00, marca: "Santa Helena", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>75kcal</td></tr><tr><td>Álcool</td><td>12.5%</td></tr></table>", id: "51" },
+            { nome: "Vinho Branco", preco: 21.00, marca: "Miolo", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>70kcal</td></tr><tr><td>Álcool</td><td>12.2%</td></tr></table>", id: "52" },
+            { nome: "Espumante", preco: 30.00, marca: "Chandon", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>80kcal</td></tr><tr><td>Álcool</td><td>11.5%</td></tr></table>", id: "53" },
+            { nome: "Espumante", preco: 28.00, marca: "Salton", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100ml</th></tr><tr><td>Valor Energético</td><td>75kcal</td></tr><tr><td>Álcool</td><td>11.2%</td></tr></table>", id: "54" },
+            { nome: "Whisky", preco: 50.00, marca: "Johnnie Walker", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50ml</th></tr><tr><td>Valor Energético</td><td>120kcal</td></tr><tr><td>Álcool</td><td>40%</td></tr></table>", id: "55" },
+            { nome: "Whisky", preco: 48.00, marca: "Chivas Regal", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50ml</th></tr><tr><td>Valor Energético</td><td>115kcal</td></tr><tr><td>Álcool</td><td>40%</td></tr></table>", id: "56" },
+            { nome: "Vodka", preco: 30.00, marca: "Absolut", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50ml</th></tr><tr><td>Valor Energético</td><td>110kcal</td></tr><tr><td>Álcool</td><td>40%</td></tr></table>", id: "57" },
+            { nome: "Vodka", preco: 28.00, marca: "Smirnoff", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50ml</th></tr><tr><td>Valor Energético</td><td>105kcal</td></tr><tr><td>Álcool</td><td>40%</td></tr></table>", id: "58" },
+            { nome: "Gin", preco: 40.00, marca: "Tanqueray", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50ml</th></tr><tr><td>Valor Energético</td><td>115kcal</td></tr><tr><td>Álcool</td><td>43%</td></tr></table>", id: "59" },
+            { nome: "Gin", preco: 38.00, marca: "Bombay Sapphire", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 50ml</th></tr><tr><td>Valor Energético</td><td>110kcal</td></tr><tr><td>Álcool</td><td>40%</td></tr></table>", id: "60" },
+            { nome: "Azeite Extra Virgem", preco: 20.00, marca: "Andorinha", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15ml</th></tr><tr><td>Valor Energético</td><td>120kcal</td></tr><tr><td>Gorduras Totais</td><td>14g</td></tr></table>", id: "61" },
+            { nome: "Azeite Extra Virgem", preco: 19.00, marca: "Gallo", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15ml</th></tr><tr><td>Valor Energético</td><td>115kcal</td></tr><tr><td>Gorduras Totais</td><td>13.5g</td></tr></table>", id: "62" },
+            { nome: "Vinagre", preco: 5.00, marca: "Heinz", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15ml</th></tr><tr><td>Valor Energético</td><td>3kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "63" },
+            { nome: "Vinagre", preco: 4.50, marca: "Castelo", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15ml</th></tr><tr><td>Valor Energético</td><td>3kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "64" },
+            { nome: "Molho de Tomate", preco: 3.00, marca: "Pomarola", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 60g</th></tr><tr><td>Valor Energético</td><td>30kcal</td></tr><tr><td>Carboidratos</td><td>7g</td></tr></table>", id: "65" },
+            { nome: "Molho de Tomate", preco: 2.80, marca: "Heinz", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 60g</th></tr><tr><td>Valor Energético</td><td>28kcal</td></tr><tr><td>Carboidratos</td><td>6.5g</td></tr></table>", id: "66" },
+            { nome: "Mostarda", preco: 4.00, marca: "Hemmer", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15g</th></tr><tr><td>Valor Energético</td><td>15kcal</td></tr><tr><td>Sódio</td><td>120mg</td></tr></table>", id: "67" },
+            { nome: "Mostarda", preco: 3.80, marca: "Hellmann's", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15g</th></tr><tr><td>Valor Energético</td><td>14kcal</td></tr><tr><td>Sódio</td><td>115mg</td></tr></table>", id: "68" },
+            { nome: "Maionese", preco: 5.00, marca: "Hellmann's", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15g</th></tr><tr><td>Valor Energético</td><td>100kcal</td></tr><tr><td>Gorduras Totais</td><td>11g</td></tr></table>", id: "69" },
+            { nome: "Maionese", preco: 4.80, marca: "Heinz", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15g</th></tr><tr><td>Valor Energético</td><td>95kcal</td></tr><tr><td>Gorduras Totais</td><td>10.5g</td></tr></table>", id: "70" },
+            { nome: "Ketchup", preco: 4.50, marca: "Heinz", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 15g</th></tr><tr><td>Valor Energético</td><td>20kcal</td></tr><tr><td>Açúcares</td><td>5g</td></tr></table>", id: "71" },
+            { nome: "Ketchup", preco: 4.30, marca: "Hemmer", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por15g</th></tr><tr><td>Valor Energético</td><td>18kcal</td></tr><tr><td>Açúcares</td><td>4.5g</td></tr></table>", id: "72" },
+            { nome: "Batata Palha", preco: 7.00, marca: "Yoki", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 25g</th></tr><tr><td>Valor Energético</td><td>130kcal</td></tr><tr><td>Gorduras Totais</td><td>8g</td></tr><tr><td>Sódio</td><td>150mg</td></tr></table>", id: "73" },
+            { nome: "Batata Palha", preco: 6.50, marca: "Elma Chips", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 25g</th></tr><tr><td>Valor Energético</td><td>125kcal</td></tr><tr><td>Gorduras Totais</td><td>7.5g</td></tr><tr><td>Sódio</td><td>145mg</td></tr></table>", id: "74" },
+            { nome: "Cebola", preco: 2.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>40kcal</td></tr><tr><td>Carboidratos</td><td>9g</td></tr></table>", id: "75" },
+            { nome: "Alho", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 10g</th></tr><tr><td>Valor Energético</td><td>4kcal</td></tr><tr><td>Carboidratos</td><td>1g</td></tr></table>", id: "76" },
+            { nome: "Tomate", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>20kcal</td></tr><tr><td>Carboidratos</td><td>4g</td></tr><tr><td>Vitamina C</td><td>13mg</td></tr></table>", id: "77" },
+            { nome: "Alface", preco: 3.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>15kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "78" },
+            { nome: "Cenoura", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>41kcal</td></tr><tr><td>Carboidratos</td><td>10g</td></tr><tr><td>Vitamina A</td><td>835ug</td></tr></table>", id: "79" },
+            { nome: "Batata", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>77kcal</td></tr><tr><td>Carboidratos</td><td>17g</td></tr></table>", id: "80" },
+            { nome: "Banana", preco: 5.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>89kcal</td></tr><tr><td>Carboidratos</td><td>23g</td></tr><tr><td>Potássio</td><td>358mg</td></tr></table>", id: "81" },
+            { nome: "Maçã", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>52kcal</td></tr><tr><td>Carboidratos</td><td>14g</td></tr></table>", id: "82" },
+            { nome: "Laranja", preco: 4.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>47kcal</td></tr><tr><td>Carboidratos</td><td>12g</td></tr><tr><td>Vitamina C</td><td>53mg</td></tr></table>", id: "83" },
+            { nome: "Abacaxi", preco: 7.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>50kcal</td></tr><tr><td>Carboidratos</td><td>13g</td></tr><tr><td>Vitamina C</td><td>48mg</td></tr></table>", id: "84" },
+            { nome: "Melancia", preco: 10.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>30kcal</td></tr><tr><td>Carboidratos</td><td>8g</td></tr></table>", id: "85" },
+            { nome: "Morango", preco: 8.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>33kcal</td></tr><tr><td>Carboidratos</td><td>8g</td></tr><tr><td>Vitamina C</td><td>59mg</td></tr></table>", id: "86" },
+            { nome: "Uva", preco: 9.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>67kcal</td></tr><tr><td>Carboidratos</td><td>17g</td></tr></table>", id: "87" },
+            { nome: "Manga", preco: 6.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>60kcal</td></tr><tr><td>Carboidratos</td><td>15g</td></tr><tr><td>Vitamina C</td><td>36mg</td></tr></table>", id: "88" },
+            { nome: "Abacate", preco: 7.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>160kcal</td></tr><tr><td>Gorduras Totais</td><td>15g</td></tr></table>", id: "89" },
+            { nome: "Limão", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>29kcal</td></tr><tr><td>Carboidratos</td><td>9g</td></tr><tr><td>Vitamina C</td><td>53mg</td></tr></table>", id: "90" },
+            { nome: "Cebola", preco: 2.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>40kcal</td></tr><tr><td>Carboidratos</td><td>9g</td></tr></table>", id: "91" },
+            { nome: "Alho", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 10g</th></tr><tr><td>Valor Energético</td><td>4kcal</td></tr><tr><td>Carboidratos</td><td>1g</td></tr></table>", id: "92" },
+            { nome: "Tomate", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>20kcal</td></tr><tr><td>Carboidratos</td><td>4g</td></tr><tr><td>Vitamina C</td><td>13mg</td></tr></table>", id: "93" },
+            { nome: "Alface", preco: 3.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>15kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "94" },
+            { nome: "Cenoura", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>41kcal</td></tr><tr><td>Carboidratos</td><td>10g</td></tr><tr><td>Vitamina A</td><td>835ug</td></tr></table>", id: "95" },
+            { nome: "Batata", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>77kcal</td></tr><tr><td>Carboidratos</td><td>17g</td></tr></table>", id: "96" },
+            { nome: "Banana", preco: 5.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>89kcal</td></tr><tr><td>Carboidratos</td><td>23g</td></tr><tr><td>Potássio</td><td>358mg</td></tr></table>", id: "97" },
+            { nome: "Maçã", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>52kcal</td></tr><tr><td>Carboidratos</td><td>14g</td></tr></table>", id: "98" },
+            { nome: "Laranja", preco: 4.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>47kcal</td></tr><tr><td>Carboidratos</td><td>12g</td></tr><tr><td>Vitamina C</td><td>53mg</td></tr></table>", id: "99" },
+            { nome: "Abacaxi", preco: 7.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>50kcal</td></tr><tr><td>Carboidratos</td><td>13g</td></tr><tr><td>Vitamina C</td><td>48mg</td></tr></table>", id: "100" },
+            { nome: "Melancia", preco: 10.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>30kcal</td></tr><tr><td>Carboidratos</td><td>8g</td></tr></table>", id: "101" },
+            { nome: "Morango", preco: 8.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>33kcal</td></tr><tr><td>Carboidratos</td><td>8g</td></tr><tr><td>Vitamina C</td><td>59mg</td></tr></table>", id: "102" },
+            { nome: "Uva", preco: 9.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>67kcal</td></tr><tr><td>Carboidratos</td><td>17g</td></tr></table>", id: "103" },
+             { nome: "Manga", preco: 6.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>60kcal</td></tr><tr><td>Carboidratos</td><td>15g</td></tr><tr><td>Vitamina C</td><td>36mg</td></tr></table>", id: "104" },
+            { nome: "Abacate", preco: 7.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>160kcal</td></tr><tr><td>Gorduras Totais</td><td>15g</td></tr></table>", id: "105" },
+            { nome: "Limão", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>29kcal</td></tr><tr><td>Carboidratos</td><td>9g</td></tr><tr><td>Vitamina C</td><td>53mg</td></tr></table>", id: "106" },
+            { nome: "Detergente", preco: 2.00, marca: "Ypê", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Tensoativo aniônico, alcalinizante, espessante, conservante, fragrância e veículo.</td><td></td></tr></table>", id: "107" },
+            { nome: "Detergente", preco: 1.80, marca: "Limpol", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Linear Alquil Benzeno Sulfonato de Sódio, Alquil Eter Sulfato de Sódio, Amida de Ácido Graxo de Coco.</td><td></td></tr></table>", id: "108" },
+            { nome: "Sabão em Pó", preco: 10.00, marca: "OMO", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Tensoativo aniônico, tensoativo não iônico, branqueador óptico, enzimas, fragrância.</td><td></td></tr></table>", id: "109" },
+            { nome: "Sabão em Pó", preco: 9.50, marca: "Brilhante", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Mistura de tensoativos aniônicos e não iônicos, branqueadores, enzimas.</td><td></td></tr></table>", id: "110" },
+            { nome: "Amaciante", preco: 8.00, marca: "Downy", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Sal de amônio quaternário, coadjuvantes, fragrância, água.</td><td></td></tr></table>", id: "111" },
+            { nome: "Amaciante", preco: 7.50, marca: "Comfort", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Cloreto de dialquil dimetil amônio, fragrância, corante, água.</td><td></td></tr></table>", id: "112" },
+            { nome: "Água Sanitária", preco: 3.00, marca: "Qboa", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Hipoclorito de sódio, água.</td><td></td></tr></table>", id: "113" },
+            { nome: "Água Sanitária", preco: 2.80, marca: "Candura", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Hipoclorito de sódio, água.</td><td></td></tr></table>", id: "114" },
+            { nome: "Desinfetante", preco: 4.00, marca: "Lysoform", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Cloreto de benzalcônio, tensoativos, fragrância, corante, água.</td><td></td></tr></table>", id: "115" },
+            { nome: "Desinfetante", preco: 3.80, marca: "Pinho Sol", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Óleo de pinho, sabão, água.</td><td></td></tr></table>", id: "116" },
+            { nome: "Papel Higiênico", preco: 12.00, marca: "Neve", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>100% celulose virgem.</td><td></td></tr></table>", id: "117" },
+            { nome: "Papel Higiênico", preco: 11.50, marca: "Personal", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>100% celulose.</td><td></td></tr></table>", id: "118" },
+            { nome: "Pasta de Dente", preco: 5.00, marca: "Colgate", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Fluoreto de sódio, água, sorbitol, sílica hidratada.</td><td></td></tr></table>", id: "119" },
+            { nome: "Pasta de Dente", preco: 4.80, marca: "Oral-B", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Fluoreto de sódio, água, sorbitol, sílica hidratada.</td><td></td></tr></table>", id: "120" },
+            { nome: "Escova de Dentes", preco: 6.00, marca: "Colgate", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Cerdas de nylon, cabo de resina termoplástica.</td><td></td></tr></table>", id: "121" },
+            { nome: "Escova de Dentes", preco: 5.50, marca: "Oral-B", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Cerdas de nylon, cabo de resina termoplástica.</td><td></td></tr></table>", id: "122" },
+            { nome: "Shampoo", preco: 15.00, marca: "Seda", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Água, lauril éter sulfato de sódio, cloreto de sódio, perfume.</td><td></td></tr></table>", id: "123" },
+            { nome: "Shampoo", preco: 14.00, marca: "Pantene", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Água, lauril éter sulfato de sódio, cloreto de sódio, pantenol.</td><td></td></tr></table>", id: "124" },
+            { nome: "Condicionador", preco: 15.00, marca: "Seda", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Água, álcool cetílico, cloreto de cetrimônio, perfume.</td><td></td></tr></table>", id: "125" },
+             { nome: "Condicionador", preco: 14.00, marca: "Pantene", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Água, álcool cetílico, cloreto de cetrimônio, pantenol.</td><td></td></tr></table>", id: "126" },
+            { nome: "Sabonete", preco: 2.00, marca: "Dove", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Sodium lauroyl isethionate, ácido esteárico, sódio esteárico.</td><td></td></tr></table>", id: "127" },
+            { nome: "Sabonete", preco: 1.80, marca: "Nivea", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Sodium tallowate, água, glicerina, fragrância.</td><td></td></tr></table>", id: "128" },
+            { nome: "Desodorante", preco: 10.00, marca: "Rexona", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Butano, isobutano, propano, cloridrato de alumínio.</td><td></td></tr></table>", id: "129" },
+            { nome: "Desodorante", preco: 9.50, marca: "Nivea", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Butano, isobutano, propano, cloridrato de alumínio.</td><td></td></tr></table>", id: "130" },
+            { nome: "Absorvente", preco: 8.00, marca: "Always", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Celulose, polímero superabsorvente, filme de polietileno.</td><td></td></tr></table>", id: "131" },
+            { nome: "Absorvente", preco: 7.50, marca: "Intimus", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Celulose, polímero superabsorvente, não tecido de polipropileno.</td><td></td></tr></table>", id: "132" },
+            { nome: "Fralda Descartável", preco: 30.00, marca: "Pampers", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Celulose, polímero superabsorvente, não tecido de polipropileno.</td><td></td></tr></table>", id: "133" },
+            { nome: "Fralda Descartável", preco: 28.00, marca: "Huggies", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Celulose, polímero superabsorvente, não tecido de polipropileno.</td><td></td></tr></table>", id: "134" },
+            { nome: "Lenço Umedecido", preco: 10.00, marca: "Johnson's", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Água, glicerina, extrato de aloe vera.</td><td></td></tr></table>", id: "135" },
+            { nome: "Lenço Umedecido", preco: 9.50, marca: "Huggies", infoNutricional: "<table><tr><th>Composição</th><th></th></tr><tr><td>Água, propilenoglicol, extrato de camomila.</td><td></td></tr></table>", id: "136" },
+            { nome: "Abóbora", preco: 8.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>26kcal</td></tr><tr><td>Carboidratos</td><td>6.5g</td></tr></table>", id: "137" },
+            { nome: "Agrião", preco: 2.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>23kcal</td></tr><tr><td>Vitamina A</td><td>478µg</td></tr><tr><td>Vitamina C</td><td>47mg</td></tr></table>", id: "138" },
+            { nome: "Aipim", preco: 5.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>160kcal</td></tr><tr><td>Carboidratos</td><td>38g</td></tr></table>", id: "139" },
+            { nome: "Alcachofra", preco: 7.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>47kcal</td></tr><tr><td>Fibras</td><td>5.4g</td></tr></table>", id: "140" },
+            { nome: "Alecrim", preco: 2.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>331kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "141" },
+            { nome: "Alface Americana", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>14kcal</td></tr><tr><td>Vitamina A</td><td>74µg</td></tr><tr><td>Vitamina K</td><td>24µg</td></tr></table>", id: "142" },
+            { nome: "Alho Poró", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>61kcal</td></tr><tr><td>Vitamina C</td><td>17mg</td></tr><tr><td>Fibras</td><td>1.8g</td></tr></table>", id: "143" },
+            { nome: "Almeirão", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>19kcal</td></tr><tr><td>Vitamina A</td><td>433µg</td></tr><tr><td>Fibras</td><td>2.5g</td></tr></table>", id: "144" },
+            { nome: "Aspargo", preco: 9.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>20kcal</td></tr><tr><td>Vitamina K</td><td>52µg</td></tr><tr><td>Folato</td><td>54µg</td></tr></table>", id: "145" },
+            { nome: "Azeitona", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>115kcal</td></tr><tr><td>Gorduras Totais</td><td>11g</td></tr><tr><td>Sódio</td><td>735mg</td></tr></table>", id: "146" },
+            { nome: "Batata Doce", preco: 4.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>86kcal</td></tr><tr><td>Carboidratos</td><td>20g</td></tr><tr><td>Vitamina A</td><td>14187µg</td></tr></table>", id: "147" },
+            { nome: "Berinjela", preco: 5.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>25kcal</td></tr><tr><td>Fibras</td><td>3g</td></tr></table>", id: "148" },
+            { nome: "Beterraba", preco: 3.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>43kcal</td></tr><tr><td>Carboidratos</td><td>10g</td></tr><tr><td>Folato</td><td>109µg</td></tr></table>", id: "149" },
+            { nome: "Brócolis", preco: 6.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>34kcal</td></tr><tr><td>Vitamina C</td><td>89mg</td></tr><tr><td>Vitamina K</td><td>93µg</td></tr></table>", id: "150" },
+            { nome: "Couve-Flor", preco: 5.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>25kcal</td></tr><tr><td>Vitamina C</td><td>48mg</td></tr><tr><td>Vitamina K</td><td>15µg</td></tr></table>", id: "151" },
+            { nome: "Espinafre", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>7kcal</td></tr><tr><td>Vitamina A</td><td>469µg</td></tr><tr><td>Vitamina K</td><td>483µg</td></tr></table>", id: "152" },
+            { nome: "Inhame", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>118kcal</td></tr><tr><td>Carboidratos</td><td>28g</td></tr></table>", id: "153" },
+            { nome: "Jiló", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>33kcal</td></tr><tr><td>Fibras</td><td>3.4g</td></tr></table>", id: "154" },
+            { nome: "Pepino", preco: 2.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>15kcal</td></tr><tr><td>Vitamina K</td><td>16µg</td></tr></table>", id: "155" },
+            { nome: "Pimentão", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>31kcal</td></tr><tr><td>Vitamina C</td><td>80mg</td></tr></table>", id: "156" },
+            { nome: "Quiabo", preco: 5.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>30kcal</td></tr><tr><td>Vitamina C</td><td>23mg</td></tr><tr><td>Fibras</td><td>3.2g</td></tr></table>", id: "157" },
+            { nome: "Rabanete", preco: 3.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>16kcal</td></tr><tr><td>Vitamina C</td><td>15mg</td></tr></table>", id: "158" },
+            { nome: "Repolho", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>25kcal</td></tr><tr><td>Vitamina C</td><td>36mg</td></tr><tr><td>Vitamina K</td><td>57µg</td></tr></table>", id: "159" },
+            { nome: "Rúcula", preco: 2.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>25kcal</td></tr><tr><td>Vitamina A</td><td>119µg</td></tr><tr><td>Vitamina K</td><td>109µg</td></tr></table>", id: "160" },
+            { nome: "Tomate Cereja", preco: 5.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>18kcal</td></tr><tr><td>Vitamina C</td><td>23mg</td></tr></table>", id: "161" },
+            { nome: "Vagem", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>31kcal</td></tr><tr><td>Vitamina C</td><td>12mg</td></tr><tr><td>Fibras</td><td>3.4g</td></tr></table>", id: "162" },
+            { nome: "Abacaxi Pérola", preco: 8.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>52kcal</td></tr><tr><td>Vitamina C</td><td>54mg</td></tr></table>", id: "163" },
+            { nome: "Acerola", preco: 10.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>32kcal</td></tr><tr><td>Vitamina C</td><td>941mg</td></tr></table>", id: "164" },
+            { nome: "Amora", preco: 9.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>43kcal</td></tr><tr><td>Vitamina C</td><td>21mg</td></tr><tr><td>Fibras</td><td>5.3g</td></tr></table>", id: "165" },
+            { nome: "Caju", preco: 7.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>43kcal</td></tr><tr><td>Vitamina C</td><td>236mg</td></tr></table>", id: "166" },
+            { nome: "Cantalupo", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>34kcal</td></tr><tr><td>Vitamina A</td><td>169µg</td></tr><tr><td>Vitamina C</td><td>37mg</td></tr></table>", id: "167" },
+            { nome: "Carambola", preco: 8.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>31kcal</td></tr><tr><td>Vitamina C</td><td>34mg</td></tr></table>", id: "168" },
+            { nome: "Cereja", preco: 12.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>63kcal</td></tr><tr><td>Vitamina C</td><td>7mg</td></tr></table>", id: "169" },
+            { nome: "Coco Verde", preco: 5.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>19kcal</td></tr><tr><td>Sódio</td><td>105mg</td></tr><tr><td>Potássio</td><td>240mg</td></tr></table>", id: "170" },
+            { nome: "Framboesa", preco: 11.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>53kcal</td></tr><tr><td>Vitamina C</td><td>26mg</td></tr><tr><td>Fibras</td><td>6.5g</td></tr></table>", id: "171" },
+            { nome: "Goiaba", preco: 7.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>68kcal</td></tr><tr><td>Vitamina C</td><td>228mg</td></tr></table>", id: "172" },
+            { nome: "Graviola", preco: 9.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>66kcal</td></tr><tr><td>Vitamina C</td><td>20mg</td></tr></table>", id: "173" },
+            { nome: "Jabuticaba", preco: 10.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>58kcal</td></tr><tr><td>Vitamina C</td><td>9mg</td></tr></table>", id: "174" },
+            { nome: "Kiwi", preco: 8.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>61kcal</td></tr><tr><td>Vitamina C</td><td>93mg</td></tr></table>", id: "175" },
+            { nome: "Lichia", preco: 13.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>66kcal</td></tr><tr><td>Vitamina C</td><td>72mg</td></tr></table>", id: "176" },
+            { nome: "Mamão", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>43kcal</td></tr><tr><td>Vitamina A</td><td>475µg</td></tr><tr><td>Vitamina C</td><td>61mg</td></tr></table>", id: "177" },
+            { nome: "Manga Palmer", preco: 7.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>60kcal</td></tr><tr><td>Vitamina A</td><td>765µg</td></tr><tr><td>Vitamina C</td><td>41mg</td></tr></table>", id: "178" },
+            { nome: "Maracujá", preco: 8.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>97kcal</td></tr><tr><td>Vitamina C</td><td>30mg</td></tr></table>", id: "179" },
+            { nome: "Melão", preco: 5.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>34kcal</td></tr><tr><td>Vitamina A</td><td>169µg</td></tr><tr><td>Vitamina C</td><td>37mg</td></tr></table>", id: "180" },
+            { nome: "Mexerica", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>53kcal</td></tr><tr><td>Vitamina C</td><td>49mg</td></tr></table>", id: "181" },
+            { nome: "Mirtilo", preco: 15.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>57kcal</td></tr><tr><td>Vitamina C</td><td>9.7mg</td></tr></table>", id: "182" },
+            { nome: "Pera", preco: 5.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>58kcal</td></tr><tr><td>Vitamina C</td><td>4.3mg</td></tr></table>", id: "183" },
+            { nome: "Pêssego", preco: 6.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>39kcal</td></tr><tr><td>Vitamina C</td><td>6.8mg</td></tr></table>", id: "184" },
+            { nome: "Romã", preco: 14.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>83kcal</td></tr><tr><td>Vitamina C</td><td>10mg</td></tr></table>", id: "185" },
+            { nome: "Tangerina", preco: 4.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>53kcal</td></tr><tr><td>Vitamina C</td><td>49mg</td></tr></table>", id: "186" },
+            { nome: "Azeitona Verde", preco: 7.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>145kcal</td></tr><tr><td>Gorduras Totais</td><td>15g</td></tr><tr><td>Sódio</td><td>1500mg</td></tr></table>", id: "187" },
+            { nome: "Azeitona Preta", preco: 8.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>210kcal</td></tr><tr><td>Gorduras Totais</td><td>22g</td></tr><tr><td>Sódio</td><td>1200mg</td></tr></table>", id: "188" },
+            { nome: "Picles", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>17kcal</td></tr><tr><td>Sódio</td><td>280mg</td></tr></table>", id: "189" },
+            { nome: "Palmito", preco: 15.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>21kcal</td></tr><tr><td>Sódio</td><td>290mg</td></tr><tr><td>Fibras</td><td>2.6g</td></tr></table>", id: "190" },
+            { nome: "Cogumelo Champignon", preco: 20.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>22kcal</td></tr><tr><td>Proteínas</td><td>3.1g</td></tr><tr><td>Fibras</td><td>1g</td></tr></table>", id: "191" },
+            { nome: "Cogumelo Shitake", preco: 25.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>34kcal</td></tr><tr><td>Proteínas</td><td>2.5g</td></tr><tr><td>Fibras</td><td>2.5g</td></tr></table>", id: "192" },
+            { nome: "Alcaparra", preco: 18.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>23kcal</td></tr><tr><td>Sódio</td><td>2960mg</td></tr></table>", id: "193" },
+            { nome: "Aspargo em Conserva", preco: 12.00, infoNutricional: "<table><tr>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>24kcal</td></tr><tr><td>Sódio</td><td>244mg</td></tr></table>", id: "194" },
+            { nome: "Atum em Lata", preco: 10.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>100kcal</td></tr><tr><td>Proteínas</td><td>25g</td></tr><tr><td>Gorduras Totais</td><td>1g</td></tr></table>", id: "195" },
+            { nome: "Sardinha em Lata", preco: 8.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>190kcal</td></tr><tr><td>Proteínas</td><td>18g</td></tr><tr><td>Gorduras Totais</td><td>12g</td></tr></table>", id: "196" },
+            { nome: "Salmão Defumado", preco: 30.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>117kcal</td></tr><tr><td>Proteínas</td><td>20g</td></tr><tr><td>Gorduras Totais</td><td>4g</td></tr></table>", id: "197" },
+            { nome: "Azeitona Recheada", preco: 9.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>150kcal</td></tr><tr><td>Gorduras Totais</td><td>16g</td></tr><tr><td>Sódio</td><td>1300mg</td></tr></table>", id: "198" },
+            { nome: "Ovo de Codorna em Conserva", preco: 7.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>158kcal</td></tr><tr><td>Proteínas</td><td>13g</td></tr><tr><td>Gorduras Totais</td><td>11g</td></tr></table>", id: "199" },
+            { nome: "Pimenta Biquinho em Conserva", preco: 14.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>28kcal</td></tr><tr><td>Sódio</td><td>1100mg</td></tr></table>", id: "200" },
+            { nome: "Geleia de Mocoto", preco: 9.80, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>250kcal</td></tr><tr><td>Proteínas</td><td>60g</td></tr><tr><td>Carboidratos</td><td>5g</td></tr></table>", id: "201" },
+            { nome: "Geleia de Pimenta", preco: 8.90, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>150kcal</td></tr><tr><td>Carboidratos</td><td>38g</td></tr></table>", id: "202" },
+            { nome: "Geleia Real", preco: 50.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 100g</th></tr><tr><td>Valor Energético</td><td>134kcal</td></tr><tr><td>Carboidratos</td><td>45g</td></tr><tr><td>Proteínas</td><td>13g</td></tr></table>", id: "203" },
+            { nome: "Mel de Abelha", preco: 20.00, marca: "Apis Flora", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>60kcal</td></tr><tr><td>Carboidratos</td><td>17g</td></tr></table>", id: "204" },
+            { nome: "Mel de Engenho", preco: 15.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>50kcal</td></tr><tr><td>Carboidratos</td><td>12g</td></tr></table>", id: "205" },
+            { nome: "Melaço de Cana", preco: 12.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>58kcal</td></tr><tr><td>Carboidratos</td><td>15g</td></tr></table>", id: "206" },
+            { nome: "Adoçante Culinário", preco: 10.45, marca: "Zero-Cal", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1g</th></tr><tr><td>Valor Energético</td><td>0kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "207" },
+            { nome: "Adoçante Dietético", preco: 9.90, marca: "Line Sucralose", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1g</th></tr><tr><td>Valor Energético</td><td>4kcal</td></tr><tr><td></td><td>Não contém quantidades significativas de...</td></tr></table>", id: "208" },
+            { nome: "Xarope de Agave", preco: 25.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20ml)</th></tr><tr><td>Valor Energético</td><td>60kcal</td></tr><tr><td>Carboidratos</td><td>16g</td></tr></table>", id: "209" },
+            { nome: "Xarope de Bordo", preco: 30.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20ml)</th></tr><tr><td>Valor Energético</td><td>52kcal</td></tr><tr><td>Açúcares</td><td>12g</td></tr></table>", id: "210" },
+            { nome: "Calda de Chocolate", preco: 12.70, marca: "Hershey's", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 2 colheres de sopa (30g)</th></tr><tr><td>Valor Energético</td><td>100kcal</td></tr><tr><td>Açúcares</td><td>20g</td></tr></table>", id: "211" },
+            { nome: "Calda de Caramelo", preco: 11.50, marca: "Kalfon", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 2 colheres de sopa (30g)</th></tr><tr><td>Valor Energético</td><td>90kcal</td></tr><tr><td>Açúcares</td><td>18g</td></tr></table>", id: "212" },
+            { nome: "Extrato de Malte", preco: 18.60, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>60kcal</td></tr><tr><td>Carboidratos</td><td>15g</td></tr></table>", id: "213" },
+            { nome: "Fibra de Trigo", preco: 7.90, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (10g)</th></tr><tr><td>Valor Energético</td><td>20kcal</td></tr><tr><td>Fibras</td><td>9g</td></tr></table>", id: "214" },
+            { nome: "Germe de Trigo", preco: 8.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (15g)</th></tr><tr><td>Valor Energético</td><td>55kcal</td></tr><tr><td>Proteínas</td><td>4g</td></tr><tr><td>Fibras</td><td>2g</td></tr></table>", id: "215" },
+            { nome: "Farelo de Aveia", preco: 9.20, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1/2 xícara (50g)</th></tr><tr><td>Valor Energético</td><td>100kcal</td></tr><tr><td>Fibras</td><td>8g</td></tr></table>", id: "216" },
+            { nome: "Farinha de Arroz", preco: 6.70, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1/2 xícara (50g)</th></tr><tr><td>Valor Energético</td><td>180kcal</td></tr><tr><td>Carboidratos</td><td>40g</td></tr></table>", id: "217" },
+            { nome: "Farinha de Centeio", preco: 7.30, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1/2 xícara (50g)</th></tr><tr><td>Valor Energético</td><td>170kcal</td></tr><tr><td>Carboidratos</td><td>35g</td></tr><tr><td>Fibras</td><td>6g</td></tr></table>", id: "218" },
+            { nome: "Farinha de Trigo Integral", preco: 5.80, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1/2 xícara (50g)</th></tr><tr><td>Valor Energético</td><td>175kcal</td></tr><tr><td>Carboidratos</td><td>36g</td></tr><tr><td>Fibras</td><td>6g</td></tr></table>", id: "219" },
+            { nome: "Amido de Milho", preco: 4.90, marca: "Maizena", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>70kcal</td></tr><tr><td>Carboidratos</td><td>17g</td></tr></table>", id: "220" },
+            { nome: "Polvilho Doce", preco: 5.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>70kcal</td></tr><tr><td>Carboidratos</td><td>17g</td></tr></table>", id: "221" },
+            { nome: "Polvilho Azedo", preco: 6.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>72kcal</td></tr><tr><td>Carboidratos</td><td>18g</td></tr></table>", id: "222" },
+            { nome: "Farinha de Mandioca", preco: 5.20, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1/2 xícara (50g)</th></tr><tr><td>Valor Energético</td><td>180kcal</td></tr><tr><td>Carboidratos</td><td>40g</td></tr></table>", id: "223" },
+            { nome: "Farinha de Coco", preco: 15.80, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 2 colheres de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>120kcal</td></tr><tr><td>Gorduras Totais</td><td>8g</td></tr><tr><td>Fibras</td><td>10g</td></tr></table>", id: "224" },
+            { nome: "Farinha de Amêndoas", preco: 25.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 2 colheres de sopa (20g)</th></tr><tr><td>Valor Energético</td><td>120kcal</td></tr><tr><td>Gorduras Totais</td><td>10g</td></tr><tr><td>Proteínas</td><td>4g</td></tr></table>", id: "225" },
+            { nome: "Proteína de Soja Texturizada", preco: 12.50, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1/2 xícara (50g)</th></tr><tr><td>Valor Energético</td><td>170kcal</td></tr><tr><td>Proteínas</td><td>25g</td></tr><tr><td>Fibras</td><td>12g</td></tr></table>", id: "226" },
+            { nome: "Colágeno Hidrolisado", preco: 30.00, infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 10g</th></tr><tr><td>Valor Energético</td><td>36kcal</td></tr><tr><td>Proteínas</td><td>9g</td></tr></table>", id: "227" },
+            { nome: "Creatina", preco: 20.00, marca: "Universal Nutrition", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 3g</th></tr><tr><td>Valor Energético</td><td>0kcal</td></tr></table>", id: "228" },
+            { nome: "Whey Protein", preco: 40.00, marca: "Optimum Nutrition", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 medida (30g)</th></tr><tr><td>Valor Energético</td><td>120kcal</td></tr><tr><td>Proteínas</td><td>24g</td></tr></table>", id: "229" },
+            { nome: "Albumina", preco: 25.00, marca: "Saltos", infoNutricional: "<table><tr><th>Informação Nutricional</th><th>Por 1 colher de sopa (10g)</th></tr><tr><td>Valor Energético</td><td>37kcal</td></tr><tr><td>Proteínas</td><td>8g</td></tr></table>", id: "230" },
+        ];
+
+        const carrinhoDeCompras = {
+            itens: {},
+            adicionarProduto: function(produto, quantidade = 1) {
+                if (this.itens[produto.nome]) {
+                    this.itens[produto.nome].quantidade += quantidade;
+                } else {
+                    this.itens[produto.nome] = { produto, quantidade };
+                }
+                this.salvarCarrinho();
+                this.atualizarCarrinho();
+            },
+            removerProduto: function(nomeProduto, quantidade = 1) {
+                if (this.itens[nomeProduto]) {
+                    this.itens[nomeProduto].quantidade -= quantidade;
+                    if (this.itens[nomeProduto].quantidade <= 0) {
+                        delete this.itens[nomeProduto];
+                    }
+                }
+                this.salvarCarrinho();
+                this.atualizarCarrinho();
+            },
+            calcularTotal: function() {
+                let total = 0;
+                for (const item in this.itens) {
+                    total += this.itens[item].produto.preco * this.itens[item].quantidade;
+                }
+                return total.toFixed(2);
+            },
+            atualizarCarrinho: function() {
+                const carrinhoLista = document.getElementById("carrinho-lista");
+                const carrinhoTotal = document.getElementById("carrinho-total");
+                carrinhoLista.innerHTML = "";
+                for (const item in this.itens) {
+                    const produto = this.itens[item].produto;
+                    const quantidade = this.itens[item].quantidade;
+                    const listItem = document.createElement("li");
+                    listItem.className = "flex justify-between items-center rounded-lg bg-gray-50 p-2";
+                    listItem.innerHTML = `
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-800 font-medium">${produto.nome} ${produto.marca ? `(${produto.marca})` : ''}</span>
+                            <div class="flex items-center space-x-2">
+                                <button class="quantidade-menos text-gray-700 hover:text-blue-500 transition-colors duration-200" data-produto="${produto.nome}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-minus-circle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+                                </button>
+                                <span class="text-sm text-gray-500">x${quantidade}</span>
+                                 <button class="quantidade-mais text-gray-700 hover:text-blue-500 transition-colors duration-200" data-produto="${produto.nome}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                                </button>
+                            </div>
+                            <span class="text-gray-900 font-semibold">R$ ${(produto.preco * quantidade).toFixed(2)}</span>
+                            <button class="remover-item text-red-500 hover:text-red-700 transition-colors duration-200" data-produto="${produto.nome}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                            </button>
+                        </div>
+                    `;
+                    carrinhoLista.appendChild(listItem);
+                }
+                carrinhoTotal.textContent = `R$ ${this.calcularTotal()}`;
+                // Adiciona event listeners para os botões de remover, mais e menos quantidade
+                const removerButtons = document.querySelectorAll('.remover-item');
+                removerButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const nomeProduto = button.dataset.produto;
+                        this.removerProduto(nomeProduto);
+                    });
+                });
+                const quantidadeMaisButtons = document.querySelectorAll('.quantidade-mais');
+                quantidadeMaisButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const nomeProduto = button.dataset.produto;
+                         const produtoSelecionado = produtosSupermercado.find(p => p.nome === nomeProduto);
+                        this.adicionarProduto(produtoSelecionado);
+                    });
+                });
+                const quantidadeMenosButtons = document.querySelectorAll('.quantidade-menos');
+                quantidadeMenosButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const nomeProduto = button.dataset.produto;
+                        this.removerProduto(nomeProduto, 1);
+                    });
+                });
+            },
+            salvarCarrinho: function() {
+                localStorage.setItem('carrinho', JSON.stringify(this.itens));
+            },
+            carregarCarrinho: function() {
+                const carrinhoSalvo = localStorage.getItem('carrinho');
+                if (carrinhoSalvo) {
+                    this.itens = JSON.parse(carrinhoSalvo);
+                    this.atualizarCarrinho();
+                }
+            },
+             finalizarCompra: function() {
+                if (Object.keys(this.itens).length === 0) {
+                    alert("Seu carrinho está vazio. Adicione produtos para finalizar a compra.");
+                    return;
+                }
+                const total = this.calcularTotal();
+                alert(`Compra finalizada! O total é de R$ ${total}. Agradecemos a sua compra!`);
+                this.itens = {};
+                this.salvarCarrinho();
+                this.atualizarCarrinho();
+            }
+        };
+
+        const produtosLista = document.getElementById("produtos-lista");
+        const pesquisaInput = document.getElementById("pesquisa-produto");
+        const filtroSelect = document.getElementById("filtro-produto");
+        const finalizarCompraButton = document.getElementById("finalizar-compra");
+        const modal = document.getElementById("produto-modal");
+        const modalFechar = document.getElementById("modal-fechar");
+        const modalTitulo = document.getElementById("modal-titulo");
+        const modalInfo = document.getElementById("modal-info");
+
+        function exibirProdutos(produtos) {
+            produtosLista.innerHTML = "";
+            produtos.forEach(produto => {
+                const produtoCard = document.createElement("div");
+                produtoCard.className = "bg-white rounded-lg shadow-md p-4 flex flex-col justify-between";
+                produtoCard.innerHTML = `
+                    <div class="flex items-center space-x-2 mb-2">
+                        <h3 class="titulo text-lg font-semibold text-gray-800">${produto.nome}</h3>
+                        <svg class="produto-info-icon text-blue-500 hover:text-blue-700" data-produto-id="${produto.id}" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    </div>
+                    <p class="text-gray-600 text-sm">${produto.marca ? `Marca: ${produto.marca}` : 'Sem Marca'}</p>
+                    <p class="text-gray-900 font-bold text-xl mt-2">R$ ${produto.preco.toFixed(2)}</p>
+                    <button class="adicionar-carrinho bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200 mt-4" data-produto="${produto.nome}">
+                        Adicionar ao Carrinho
+                    </button>
+                `;
+                produtosLista.appendChild(produtoCard);
+
+                const adicionarButton = produtoCard.querySelector('.adicionar-carrinho');
+                adicionarButton.addEventListener('click', () => {
+                    carrinhoDeCompras.adicionarProduto(produto);
+                    alert(`${produto.nome} adicionado ao carrinho!`);
+                });
+
+                const infoButton = produtoCard.querySelector('.produto-info-icon');
+                infoButton.addEventListener('click', () => {
+                    const produtoId = infoButton.dataset.produtoId;
+                    const produtoInfo = produtosSupermercado.find(p => p.id === produtoId);
+                    if (produtoInfo) {
+                        exibirModal(produtoInfo);
+                    }
+                });
+            });
+        }
+
+        function filtrarProdutos() {
+            const textoPesquisa = pesquisaInput.value.toLowerCase();
+            const filtroSelecionado = filtroSelect.value;
+
+            let produtosFiltrados = produtosSupermercado.filter(produto =>
+                produto.nome.toLowerCase().includes(textoPesquisa)
+            );
+
+            if (filtroSelecionado === "marca") {
+                const marcasSet = new Set();
+                produtosFiltrados = produtosFiltrados.filter(produto => {
+                    if (produto.marca && !marcasSet.has(produto.marca)) {
+                        marcasSet.add(produto.marca);
+                        return true;
+                    }
+                    return false;
+                });
+            } else if (filtroSelecionado === "preco-crescente") {
+                produtosFiltrados.sort((a, b) => a.preco - b.preco);
+            } else if (filtroSelecionado === "preco-decrescente") {
+                produtosFiltrados.sort((a, b) => b.preco - a.preco);
+            }
+            else if (filtroSelecionado === "alfabetico-a-z") {
+                 produtosFiltrados.sort((a, b) => a.nome.localeCompare(b.nome));
+            }
+            else if (filtroSelecionado === "alfabetico-z-a") {
+                 produtosFiltrados.sort((a, b) => b.nome.localeCompare(a.nome));
+            }
+
+            exibirProdutos(produtosFiltrados);
+        }
+
+        function exibirModal(produto) {
+            modalTitulo.textContent = produto.nome;
+            modalInfo.innerHTML =  produto.infoNutricional;
+            modal.style.display = "flex";
+        }
+
+        pesquisaInput.addEventListener("input", filtrarProdutos);
+        filtroSelect.addEventListener("change", filtrarProdutos);
+        finalizarCompraButton.addEventListener("click", () => {
+            carrinhoDeCompras.finalizarCompra();
+        });
+
+        modalFechar.addEventListener("click", () => {
+            modal.style.display = "none";
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        });
+
+        carrinhoDeCompras.carregarCarrinho();
+        exibirProdutos(produtosSupermercado);
+    </script>
+</body>
+</html>

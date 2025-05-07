@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado App - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+        .titulo {
+            font-family: 'Poppins', sans-serif;
+        }
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            top: 70%;
+            right: 0.75rem;
+            transform: translateY(-50%);
+            cursor: pointer;
+            width: 1rem;
+            height: 1rem;
+            color: #9ca3af;
+        }
+        .password-input {
+             padding-right: 2.5rem;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
+        <h1 class="titulo text-2xl font-semibold text-blue-600 text-center mb-6">Mercado App</h1>
+        <h2 class="text-lg text-gray-700 text-center mb-4">Faça login para continuar</h2>
+
+        <div id="mensagem-erro" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert">
+            <strong class="font-bold">Erro!</strong>
+            <span class="block sm:inline" id="texto-erro"></span>
+        </div>
+
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label for="usuario" class="block text-gray-700 text-sm font-bold mb-2">Usuário</label>
+                <input type="text" id="usuario" placeholder="Digite seu usuário" required
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <p id="usuario-erro" class="text-red-500 text-xs italic mt-1"></p>
+            </div>
+            <div class="password-container">
+                <label for="senha" class="block text-gray-700 text-sm font-bold mb-2">Senha</label>
+                <input type="password" id="senha" placeholder="Digite sua senha" required
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline password-input">
+                 <svg id="password-toggle" class="password-toggle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path d="M12 15v-6"/></svg>
+                 <p id="senha-erro" class="text-red-500 text-xs italic mt-1"></p>
+            </div>
+            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline w-full">
+                Entrar
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const mensagemErro = document.getElementById('mensagem-erro');
+        const textoErro = document.getElementById('texto-erro');
+        const usuarioInput = document.getElementById('usuario');
+        const senhaInput = document.getElementById('senha');
+        const usuarioErro = document.getElementById('usuario-erro');
+        const senhaErro = document.getElementById('senha-erro');
+        const passwordToggle = document.getElementById('password-toggle');
+
+        let senhaVisivel = false;
+
+        passwordToggle.addEventListener('click', () => {
+            senhaVisivel = !senhaVisivel;
+            senhaInput.type = senhaVisivel ? 'text' : 'password';
+            const eyeIconPath = senhaVisivel
+                ? "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"
+                : "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z M12 12a3 3 0 1 1 0-6 3 3 0 0 1 0 6z M10.3 10.3a4.4 4.4 0 0 1 3.4 1.4 4.5 4.5 0 0 0-1.4 3.4 4.4 4.4 0 0 1-3.4-1.4 4.5 4.5 0 0 0 1.4-3.4z";
+            passwordToggle.querySelector('path').setAttribute('d', eyeIconPath);
+
+        });
+
+        function verificarCredenciais(usuario, senha) {
+            const usuarioPadrao = "Usuario";
+            const senhaPadrao = "Senha123@";
+
+            if (usuario === usuarioPadrao && senha === senhaPadrao) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        loginForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const usuario = usuarioInput.value.trim();
+            const senha = senhaInput.value.trim();
+            let hasErrors = false;
+
+             usuarioErro.textContent = "";
+             senhaErro.textContent = "";
+            mensagemErro.classList.add('hidden');
+
+
+            if (!usuario) {
+                usuarioErro.textContent = "Por favor, insira seu nome de usuário.";
+                hasErrors = true;
+            }
+
+            if (!senha) {
+                senhaErro.textContent = "Por favor, insira sua senha.";
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                return;
+            }
+
+            if (verificarCredenciais(usuario, senha)) {
+                // Redirecionar para a página principal
+                window.location.href = "index.html";
+            } else {
+                textoErro.textContent = "Usuário ou senha inválidos.";
+                mensagemErro.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
