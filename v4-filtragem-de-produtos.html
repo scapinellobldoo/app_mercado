@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+        .titulo {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+        <h1 class="titulo text-3xl font-semibold text-blue-600 text-center mb-6">Mercado App</h1>
+
+        <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+            <h2 class="titulo text-xl font-semibold text-gray-800 mb-4">Carrinho de Compras</h2>
+            <ul id="carrinho-lista" class="space-y-3">
+                </ul>
+            <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                <span class="text-gray-700 font-semibold">Total:</span>
+                <span id="carrinho-total" class="text-xl font-bold text-green-600">R$ 0,00</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+            <div class="flex flex-col sm:flex-row items-center justify-between mb-4">
+                <h2 class="titulo text-xl font-semibold text-gray-800 mb-4 sm:mb-0">Produtos</h2>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+                    <input
+                        type="text"
+                        id="pesquisa-produto"
+                        placeholder="Pesquisar produtos..."
+                        class="w-full sm:w-64 px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <div class="relative w-full sm:w-64">
+                        <select id="filtro-produto" class="appearance-none w-full px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700">
+                            <option value="todos">Todos os Produtos</option>
+                            <option value="marca">Filtrar por Marca</option>
+                            <option value="preco-crescente">Preço: Menor para Maior</option>
+                            <option value="preco-decrescente">Preço: Maior para Menor</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="produtos-lista">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const produtosSupermercado = [
+            { nome: "Arroz", preco: 20.00, marca: "Tio João" },
+            { nome: "Arroz", preco: 22.00, marca: "Camil" },
+            { nome: "Feijão", preco: 15.00, marca: "Kicaldo" },
+            { nome: "Feijão", preco: 14.50, marca: "Camil" },
+            { nome: "Macarrão", preco: 5.00, marca: "Barilla" },
+            { nome: "Macarrão", preco: 4.50, marca: "Adria" },
+            { nome: "Óleo de Soja", preco: 9.00, marca: "Liza" },
+            { nome: "Óleo de Soja", preco: 8.50, marca: "Cocamar" },
+            { nome: "Açúcar", preco: 4.00, marca: "União" },
+            { nome: "Açúcar", preco: 3.80, marca: "Guarani" },
+            { nome: "Sal", preco: 2.00, marca: "Lebre" },
+            { nome: "Sal", preco: 1.80, marca: "Cisne" },
+            { nome: "Café", preco: 10.00, marca: "Melitta" },
+            { nome: "Café", preco: 9.50, marca: "Pilão" },
+            { nome: "Leite", preco: 4.00, marca: "Parmalat" },
+            { nome: "Leite", preco: 3.80, marca: "Italac" },
+            { nome: "Ovos", preco: 6.00, marca: "Mantiqueira" },
+            { nome: "Ovos", preco: 5.50, marca: "Katayama" },
+            { nome: "Pão de Forma", preco: 8.00, marca: "Pullman" },
+            { nome: "Pão de Forma", preco: 7.50, marca: "Wickbold" },
+            { nome: "Manteiga", preco: 12.00, marca: "Qualy" },
+            { nome: "Manteiga", preco: 11.50, marca: "Aviação" },
+            { nome: "Queijo Mussarela", preco: 20.00, marca: "Lactalis" },
+            { nome: "Queijo Mussarela", preco: 19.00, marca: "Tirolez" },
+            { nome: "Presunto", preco: 15.00, marca: "Sadia" },
+            { nome: "Presunto", preco: 14.00, marca: "Perdigão" },
+            { nome: "Frango Congelado", preco: 18.00, marca: "Sadia" },
+            { nome: "Frango Congelado", preco: 17.00, marca: "Perdigão" },
+            { nome: "Carne Bovina", preco: 25.00, marca: "Friboi" },
+            { nome: "Carne Bovina", preco: 24.00, marca: "Swift" },
+            { nome: "Salsicha", preco: 6.00, marca: "Sadia" },
+            { nome: "Salsicha", preco: 5.50, marca: "Perdigão" },
+            { nome: "Pizza Congelada", preco: 22.00, marca: "Sadia" },
+            { nome: "Pizza Congelada", preco: 21.00, marca: "Perdigão" },
+            { nome: "Lasanha Congelada", preco: 20.00, marca: "Seara" },
+            { nome: "Lasanha Congelada", preco: 19.00, marca: "Sadia" },
+            { nome: "Refrigerante Cola", preco: 7.00, marca: "Coca-Cola" },
+            { nome: "Refrigerante Cola", preco: 6.50, marca: "Pepsi" },
+            { nome: "Refrigerante Limão", preco: 6.00, marca: "Sprite" },
+            { nome: "Refrigerante Limão", preco: 5.50, marca: "Seven Up" },
+            { nome: "Suco de Laranja", preco: 8.00, marca: "Natural One" },
+            { nome: "Suco de Laranja", preco: 7.50, marca: "Citrus Juice" },
+            { nome: "Água Mineral", preco: 2.00, marca: "Crystal" },
+            { nome: "Água Mineral", preco: 1.80, marca: "Minalba" },
+            { nome: "Cerveja Pilsen", preco: 3.00, marca: "Skol" },
+            { nome: "Cerveja Pilsen", preco: 2.80, marca: "Brahma" },
+            { nome: "Cerveja IPA", preco: 8.00, marca: "Colorado" },
+            { nome: "Cerveja IPA", preco: 7.50, marca: "Eisenbahn" },
+            { nome: "Vinho Tinto", preco: 25.00, marca: "Concha y Toro" },
+            { nome: "Vinho Tinto", preco: 24.00, marca: "Casillero del Diablo" },
+            { nome: "Vinho Branco", preco: 22.00, marca: "Santa Helena" },
+            { nome: "Vinho Branco", preco: 21.00, marca: "Miolo" },
+            { nome: "Espumante", preco: 30.00, marca: "Chandon" },
+            { nome: "Espumante", preco: 28.00, marca: "Salton" },
+            { nome: "Whisky", preco: 50.00, marca: "Johnnie Walker" },
+            { nome: "Whisky", preco: 48.00, marca: "Chivas Regal" },
+            { nome: "Vodka", preco: 30.00, marca: "Absolut" },
+            { nome: "Vodka", preco: 28.00, marca: "Smirnoff" },
+            { nome: "Gin", preco: 40.00, marca: "Tanqueray" },
+            { nome: "Gin", preco: 38.00, marca: "Bombay Sapphire" },
+            { nome: "Azeite Extra Virgem", preco: 20.00, marca: "Andorinha" },
+            { nome: "Azeite Extra Virgem", preco: 19.00, marca: "Gallo" },
+            { nome: "Vinagre", preco: 5.00, marca: "Heinz" },
+            { nome: "Vinagre", preco: 4.50, marca: "Castelo" },
+            { nome: "Molho de Tomate", preco: 3.00, marca: "Pomarola" },
+            { nome: "Molho de Tomate", preco: 2.80, marca: "Heinz" },
+            { nome: "Mostarda", preco: 4.00, marca: "Hemmer" },
+            { nome: "Mostarda", preco: 3.80, marca: "Hellmann's" },
+            { nome: "Maionese", preco: 5.00, marca: "Hellmann's" },
+            { nome: "Maionese", preco: 4.80, marca: "Heinz" },
+            { nome: "Ketchup", preco: 4.50, marca: "Heinz" },
+            { nome: "Ketchup", preco: 4.30, marca: "Hemmer" },
+            { nome: "Batata Palha", preco: 7.00, marca: "Yoki" },
+            { nome: "Batata Palha", preco: 6.50, marca: "Elma Chips" },
+            { nome: "Cebola", preco: 2.50 },
+            { nome: "Alho", preco: 3.00 },
+            { nome: "Tomate", preco: 4.00 },
+            { nome: "Alface", preco: 3.50 },
+            { nome: "Cenoura", preco: 3.00 },
+            { nome: "Batata", preco: 4.00 },
+            { nome: "Banana", preco: 5.00 },
+            { nome: "Maçã", preco: 6.00 },
+            { nome: "Laranja", preco: 4.50 },
+            { nome: "Abacaxi", preco: 7.00 },
+            { nome: "Melancia", preco: 10.00 },
+            { nome: "Morango", preco: 8.00 },
+            { nome: "Uva", preco: 9.00 },
+            { nome: "Manga", preco: 6.50 },
+            { nome: "Abacate", preco: 7.50 },
+            { nome: "Limão", preco: 3.00 },
+            { nome: "Cebola", preco: 2.50 },
+            { nome: "Alho", preco: 3.00 },
+            { nome: "Tomate", preco: 4.00 },
+            { nome: "Alface", preco: 3.50 },
+            { nome: "Cenoura", preco: 3.00 },
+            { nome: "Batata", preco: 4.00 },
+            { nome: "Banana", preco: 5.00 },
+            { nome: "Maçã", preco: 6.00 },
+            { nome: "Laranja", preco: 4.50 },
+            { nome: "Abacaxi", preco: 7.00 },
+            { nome: "Melancia", preco: 10.00 },
+            { nome: "Morango", preco: 8.00 },
+            { nome: "Uva", preco: 9.00 },
+            { nome: "Manga", preco: 6.50 },
+            { nome: "Abacate", preco: 7.50 },
+            { nome: "Limão", preco: 3.00 },
+            { nome: "Detergente", preco: 2.00, marca: "Ypê" },
+            { nome: "Detergente", preco: 1.80, marca: "Limpol" },
+            { nome: "Sabão em Pó", preco: 10.00, marca: "OMO" },
+            { nome: "Sabão em Pó", preco: 9.50, marca: "Brilhante" },
+            { nome: "Amaciante", preco: 8.00, marca: "Downy" },
+            { nome: "Amaciante", preco: 7.50, marca: "Comfort" },
+            { nome: "Água Sanitária", preco: 3.00, marca: "Qboa" },
+            { nome: "Água Sanitária", preco: 2.80, marca: "Candura" },
+            { nome: "Desinfetante", preco: 4.00, marca: "Lysoform" },
+            { nome: "Desinfetante", preco: 3.80, marca: "Pinho Sol" },
+            { nome: "Papel Higiênico", preco: 12.00, marca: "Neve" },
+            { nome: "Papel Higiênico", preco: 11.50, marca: "Personal" },
+            { nome: "Pasta de Dente", preco: 5.00, marca: "Colgate" },
+            { nome: "Pasta de Dente", preco: 4.80, marca: "Oral-B" },
+            { nome: "Escova de Dentes", preco: 6.00, marca: "Colgate" },
+            { nome: "Escova de Dentes", preco: 5.50, marca: "Oral-B" },
+            { nome: "Shampoo", preco: 15.00, marca: "Seda" },
+            { nome: "Shampoo", preco: 14.00, marca: "Pantene" },
+            { nome: "Condicionador", preco: 15.00, marca: "Seda" },
+            { nome: "Condicionador", preco: 14.00, marca: "Pantene" },
+            { nome: "Sabonete", preco: 2.00, marca: "Dove" },
+            { nome: "Sabonete", preco: 1.80, marca: "Nivea" },
+            { nome: "Desodorante", preco: 10.00, marca: "Rexona" },
+            { nome: "Desodorante", preco: 9.50, marca: "Nivea" },
+            { nome: "Absorvente", preco: 8.00, marca: "Always" },
+            { nome: "Absorvente", preco: 7.50, marca: "Intimus" },
+            { nome: "Fralda Descartável", preco: 30.00, marca: "Pampers" },
+            { nome: "Fralda Descartável", preco: 28.00, marca: "Huggies" },
+            { nome: "Lenço Umedecido", preco: 10.00, marca: "Johnson's" },
+            { nome: "Lenço Umedecido", preco: 9.50, marca: "Huggies" },
+        ];
+
+        const carrinhoDeCompras = {
+            itens: {},
+            adicionarProduto: function(produto, quantidade = 1) {
+                if (this.itens[produto.nome]) {
+                    this.itens[produto.nome].quantidade += quantidade;
+                } else {
+                    this.itens[produto.nome] = { produto, quantidade };
+                }
+                this.atualizarCarrinho();
+            },
+            removerProduto: function(nomeProduto, quantidade = 1) {
+                if (this.itens[nomeProduto]) {
+                    this.itens[nomeProduto].quantidade -= quantidade;
+                    if (this.itens[nomeProduto].quantidade <= 0) {
+                        delete this.itens[nomeProduto];
+                    }
+                }
+                this.atualizarCarrinho();
+            },
+            calcularTotal: function() {
+                let total = 0;
+                for (const item in this.itens) {
+                    total += this.itens[item].produto.preco * this.itens[item].quantidade;
+                }
+                return total.toFixed(2);
+            },
+            atualizarCarrinho: function() {
+                const carrinhoLista = document.getElementById("carrinho-lista");
+                const carrinhoTotal = document.getElementById("carrinho-total");
+                carrinhoLista.innerHTML = "";
+                for (const item in this.itens) {
+                    const produto = this.itens[item].produto;
+                    const quantidade = this.itens[item].quantidade;
+                    const listItem = document.createElement("li");
+                    listItem.className = "flex justify-between items-center rounded-lg bg-gray-50 p-2";
+                    listItem.innerHTML = `
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-800 font-medium">${produto.nome} ${produto.marca ? `(${produto.marca})` : ''}</span>
+                            <span class="text-sm text-gray-500">x${quantidade}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-gray-900 font-semibold">R$ ${(produto.preco * quantidade).toFixed(2)}</span>
+                            <button class="remover-item text-red-500 hover:text-red-700 transition-colors duration-200" data-produto="${produto.nome}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                            </button>
+                        </div>
+                    `;
+                    carrinhoLista.appendChild(listItem);
+                }
+                carrinhoTotal.textContent = `R$ ${this.calcularTotal()}`;
+                // Adiciona event listeners para os botões de remover
+                const removerButtons = document.querySelectorAll('.remover-item');
+                removerButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const nomeProduto = button.dataset.produto;
+                        this.removerProduto(nomeProduto);
+                    });
+                });
+            }
+        };
+
+        const produtosLista = document.getElementById("produtos-lista");
+        const pesquisaInput = document.getElementById("pesquisa-produto");
+        const filtroSelect = document.getElementById("filtro-produto");
+
+        function exibirProdutos(produtos) {
+            produtosLista.innerHTML = "";
+            produtos.forEach(produto => {
+                const produtoCard = document.createElement("div");
+                produtoCard.className = "bg-white rounded-lg shadow-md p-4 flex flex-col justify-between";
+                produtoCard.innerHTML = `
+                    <h3 class="titulo text-lg font-semibold text-gray-800 mb-2">${produto.nome}</h3>
+                    <p class="text-gray-600 text-sm">${produto.marca ? `Marca: ${produto.marca}` : 'Sem Marca'}</p>
+                    <p class="text-gray-900 font-bold text-xl mt-2">R$ ${produto.preco.toFixed(2)}</p>
+                    <button class="adicionar-carrinho bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200 mt-4" data-produto="${produto.nome}">
+                        Adicionar ao Carrinho
+                    </button>
+                `;
+                produtosLista.appendChild(produtoCard);
+
+                const adicionarButton = produtoCard.querySelector('.adicionar-carrinho');
+                adicionarButton.addEventListener('click', () => {
+                    carrinhoDeCompras.adicionarProduto(produto);
+                    alert(`${produto.nome} adicionado ao carrinho!`);
+                });
+            });
+        }
+
+        function filtrarProdutos() {
+            const textoPesquisa = pesquisaInput.value.toLowerCase();
+            const filtroSelecionado = filtroSelect.value;
+
+            let produtosFiltrados = produtosSupermercado.filter(produto =>
+                produto.nome.toLowerCase().includes(textoPesquisa)
+            );
+
+            if (filtroSelecionado === "marca") {
+                const marcasSet = new Set();
+                produtosFiltrados = produtosFiltrados.filter(produto => {
+                    if (produto.marca && !marcasSet.has(produto.marca)) {
+                        marcasSet.add(produto.marca);
+                        return true;
+                    }
+                    return false;
+                });
+            } else if (filtroSelecionado === "preco-crescente") {
+                produtosFiltrados.sort((a, b) => a.preco - b.preco);
+            } else if (filtroSelecionado === "preco-decrescente") {
+                produtosFiltrados.sort((a, b) => b.preco - a.preco);
+            }
+
+            exibirProdutos(produtosFiltrados);
+        }
+
+        pesquisaInput.addEventListener("input", filtrarProdutos);
+        filtroSelect.addEventListener("change", filtrarProdutos);
+
+        exibirProdutos(produtosSupermercado);
+    </script>
+</body>
+</html>
